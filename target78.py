@@ -182,13 +182,25 @@ def show_set_goal_form(user_id):
         
         # 목표 포인트 게이지 표시
         st.markdown(f"현재 목표 포인트: **{current_points}**")
-        st.progress(current_points / 50)  # 최대 포인트가 50일 때의 게이지
+        
+        # 포인트가 0보다 클 때만 게이지 표시하고 범위 확인
+        if current_points > 0:
+            progress_value = current_points / 50
+            if progress_value > 1.0:
+                progress_value = 1.0  # 최대 값으로 설정
+            st.progress(progress_value)
+        else:
+            st.warning("현재 포인트가 없습니다.")
         
         if not current_goal:
             new_goal = st.text_input("새로운 목표를 입력하세요:")
             set_goal_button_key = "set_goal_button"  # 목표 설정 버튼에 고유한 키 부여
             if st.button("목표 설정하기", key=set_goal_button_key):
                 set_goal(user_id, new_goal)
+    else:
+        st.error("사용자 데이터를 찾을 수 없습니다.")
+
+
 
 # 완료된 임무 페이지 표시 함수
 def show_completed_tasks_page(user_id):
@@ -366,3 +378,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
