@@ -2,6 +2,7 @@ import streamlit as st
 import json
 import os
 from datetime import datetime
+import time
 
 # 사용자 데이터 파일 경로
 USER_DATA_DIR = "user_data"
@@ -86,6 +87,8 @@ def set_goal(user_id, goal_text):
         save_user_data(user_id, user_data)
         st.success(f"목표를 설정했습니다: {goal_text}")
         st.session_state.goal_set = True
+        time.sleep(2)
+        st.experimental_rerun()  # 목표 설정 후 페이지를 새로고침
 
 # 임무 추가 함수
 def add_task(user_id, task_name, hardcore):
@@ -108,7 +111,7 @@ def complete_task(user_id, task_name):
             if user_data['tasks'][task_name].get('hardcore', False):
                 points = 5
             else:
-                points = 1
+                points = 3  # 수정된 포인트
             user_data['points'] += points  # 기존 포인트에 추가
             save_user_data(user_id, user_data)
             st.success(f"{task_name} 임무를 완료했습니다! (+{points} 포인트)")
@@ -123,7 +126,7 @@ def calculate_progress(user_id):
     user_data = load_user_data(user_id)
     if user_data:
         total_completed_tasks = sum(
-            5 if user_data['tasks'][task].get('hardcore', False) and user_data['tasks'][task]['completed'] else 1
+            5 if user_data['tasks'][task].get('hardcore', False) and user_data['tasks'][task]['completed'] else 3
             if user_data['tasks'][task]['completed'] else 0
             for task in user_data['tasks']
         )
@@ -211,8 +214,7 @@ def show_completed_tasks_page(user_id):
 def show_add_task_page(user_id):
     st.title("임무 추가")
     task_name = st.text_input("임무 이름:")
-    hardcore = st.checkbox("하드코어 모드")
-
+    hardcore = st.checkbox("하드코어 모드 (포인트 5점)")
     add_task_button_key = "add_task_button"  # 임무 추가 버튼에 고유한 키 부여
     if st.button("임무 추가", key=add_task_button_key):
         add_task(user_id, task_name, hardcore)
@@ -263,11 +265,22 @@ def reset_user_data(user_id):
                     json.dump(user_data, file, indent=4, default=str)
                 
                 st.success("목표, 목표 포인트 및 완료된 임무가 초기화되었습니다.")
+                time.sleep(5)  # 5초 동안 메시지 표시
                 st.experimental_rerun()  # 페이지 새로고침
             else:
                 st.warning("초기화할 데이터가 없습니다.")
         except Exception as e:
             st.error(f"초기화 중 오류가 발생했습니다: {str(e)}")
+
+# 규칙 페이지 표시 함수
+def show_rules_page():
+    st.title("규칙 (How to do)")
+    rules = """
+    1. 이 사이트는 여러 분들의 목표를 달성시켜주기 위한 페이지입니다. 목표를 설정하고 임무를 지정하세요! 목표 포인트는 50점을 이루면 게이지가 달성되고 일반 임무는 완료 시 목표 포인트 3점, 하드코어 임무는 완료 시 목표 포인트 5점을 획득합니다!
+    2. 임무는 임무 추가 페이지에서 추가 가능하고 임무 현황 페이지에서 임무 확인 및 임무 완료를 할 수 있습니다. 완료된 페이지는 안봐도 아시죠^^~?
+    3. 초기화 버튼을 누르면 목표와 목표포인트, 그리고 임무들이 다 초기화 됩니다. 신중히 선택하세요!
+    """
+    st.markdown(rules)
 
 # 홈페이지 표시 함수
 def show_home_page():
@@ -303,7 +316,7 @@ def show_register_page():
 # 메인 함수
 def main():
     st.sidebar.title("메뉴")
-    menu = ["목표 설정", "임무 추가", "임무 현황", "완료된 임무", "로그아웃", "초기화"]
+    menu = ["목표 설정", "임무 추가", "임무 현황", "완료된 임무", "규칙 (How to do)", "초기화", "로그아웃"]
     choice = st.sidebar.radio("메뉴", menu)
 
     if choice == "목표 설정":
@@ -326,16 +339,18 @@ def main():
             show_completed_tasks_page(st.session_state.user_id)
         else:
             st.error("로그인이 필요합니다.")
-    elif choice == "로그아웃":
-        if st.session_state.logged_in:
-            logout()
-        else:
-            st.warning("로그인 상태가 아닙니다.")
     elif choice == "초기화":
         if st.session_state.logged_in:
             reset_user_data(st.session_state.user_id)
         else:
             st.warning("로그인 상태가 아닙니다.")
+    elif choice == "로그아웃":
+        if st.session_state.logged_in:
+            logout()
+        else:
+            st.warning("로그인 상태가 아닙니다.")
+    elif choice == "규칙 (How to do)":
+        show_rules_page()
     
     st.sidebar.markdown("---")
     if not st.session_state.logged_in:
